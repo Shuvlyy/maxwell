@@ -1,0 +1,22 @@
+PODS:
+  - Flutter (1.0.0)
+  - native_glass_navbar (0.0.1):
+    - Flutter
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - native_glass_navbar (from `.symlinks/plugins/native_glass_navbar/ios`)
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  native_glass_navbar:
+    :path: ".symlinks/plugins/native_glass_navbar/ios"
+
+SPEC CHECKSUMS:
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  native_glass_navbar: ca05c3855b2bcce8b117a6db54f51e63e149f032
+
+PODFILE CHECKSUM: 1819b68330b3c09419a9e0747bf8356c4389a386
+
+COCOAPODS: 1.16.2
