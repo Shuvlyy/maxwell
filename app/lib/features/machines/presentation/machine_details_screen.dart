@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,15 +19,22 @@ class MachineDetailsScreen extends ConsumerWidget
   const MachineDetailsScreen({super.key, required this.id});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref)
-  {
-    final machine = ref.watch(machineByIdProvider(id));
-    final bookings = ref.watch(bookingsForMachineProvider(id));
-    final currentBooking = ref.watch(currentBookingForMachineProvider(id));
+  Widget build(BuildContext context, WidgetRef ref) {
+    final machineAsync = ref.watch(machineByIdProvider(id));
+    final bookingsAsync = ref.watch(bookingsForMachineProvider(id));
+    final currentBookingAsync = ref.watch(currentBookingForMachineProvider(id));
 
-    if (machine == null) {
-      return const Scaffold(body: Center(child: Text('Machine not found')));
+    if (machineAsync.isLoading || bookingsAsync.isLoading || currentBookingAsync.isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
+
+    if (machineAsync.hasError || machineAsync.value == null) {
+      return const Scaffold(body: Center(child: Text('Erreur ou machine introuvable')));
+    }
+
+    final machine = machineAsync.value!;
+    final bookings = bookingsAsync.value ?? [];
+    final currentBooking = currentBookingAsync.value;
 
     final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
     final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
@@ -50,14 +58,11 @@ class MachineDetailsScreen extends ConsumerWidget
     );
   }
 
-  Widget _buildHeader(BuildContext context, Machine machine, Booking? currentBooking)
-  {
-    final isInUse = currentBooking != null && machine.baseStatus == MachineBaseStatus.functional;
-    final isMaintenance = machine.baseStatus == MachineBaseStatus.maintenance;
+  Widget _buildHeader(BuildContext context, Machine machine, Booking? currentBooking) {
+    final isMaintenance = machine.status == MachineStatus.out_of_order;
+    final isInUse = currentBooking != null && !isMaintenance;
 
-    final statusColor = isMaintenance
-      ? Colors.red
-      : (isInUse ? Colors.orange : Colors.green); // todo: no nested ternary operators
+    final statusColor = isMaintenance ? Colors.red : (isInUse ? Colors.orange : Colors.green); // todo: no nested ternary operators
 
     return Container(
       padding: const EdgeInsets.all(32),
@@ -88,7 +93,7 @@ class MachineDetailsScreen extends ConsumerWidget
           if (isInUse) ...[
             const Gap(8),
             Text(
-              'Used by ${currentBooking.userName}',
+              'Used by ${currentBooking.user.firstName} ${currentBooking.user.lastName}',
               style: Theme.of(context).textTheme.bodyLarge,
             ),
             const Gap(4),
@@ -152,18 +157,43 @@ class MachineDetailsScreen extends ConsumerWidget
                       child: const Icon(Icons.person, color: Colors.white),
                     ),
                     title: Text(
-                      booking.userName,
+                      '${booking.user.firstName} ${booking.user.lastName}',
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                     subtitle: Text(
-                      '${timeFormat.format(booking.startTime)} - ${timeFormat.format(booking.endTime)}',
+                      '${timeFormat.format(booking.startTime.toLocal())} - ${timeFormat.format(booking.endTime.toLocal())}',
                     ),
-                    trailing: isCurrent ? const Text('NOW', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)) : null,
+                    trailing: isCurrent
+                        ? const Text('NOW', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold))
+                        : null,
+                    onTap: () {
+                      showCupertinoDialog(
+                        context: context,
+                        builder: (context) => CupertinoAlertDialog(
+                          title: Text('${booking.user.firstName} ${booking.user.lastName}'),
+                          content: Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text('Room: ${booking.user.roomNumber}'),
+                                if (booking.user.phone != null && booking.user.phone!.isNotEmpty)
+                                  Text('Phone: ${booking.user.phone}'),
+                              ],
+                            ),
+                          ),
+                          actions: [
+                            CupertinoDialogAction(
+                              isDefaultAction: true,
+                              child: const Text('Close'),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
-                )
-                    .animate()
-                    .fadeIn(delay: (index * 100).ms)
-                    .slideX(begin: 0.1, end: 0);
+                ).animate().fadeIn(delay: (index * 100).ms).slideX(begin: 0.1, end: 0);
 
                 if (index == 0) {
                   return Column(

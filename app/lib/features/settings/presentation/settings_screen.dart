@@ -133,17 +133,17 @@ class SettingsScreen extends ConsumerWidget
         title: const Text('Log Out'),
         content: const Text('Are you sure you want to log out?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
+          CupertinoDialogAction(
             child: const Text('Cancel'),
+            onPressed: () => Navigator.pop(context),
           ),
-          TextButton(
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            child: const Text('Log out', style: TextStyle(color: Colors.red)),
             onPressed: () {
               Navigator.pop(context);
               ref.read(authControllerProvider.notifier).logout();
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Log Out'),
           ),
         ],
       ),

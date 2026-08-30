@@ -66,17 +66,14 @@ class OnboardingController extends _$OnboardingController
     state = state.copyWith(isLoading: true);
     
     try {
-      if (code == 'SECRET2024') {
-        await ref.read(authControllerProvider.notifier).register(
-          firstName: state.firstName,
-          lastName: state.lastName,
-          roomNumber: state.roomNumber,
-          password: state.password,
-          phoneNumber: state.phone,
-        );
-      } else {
-        throw Exception('Invalid activation code');
-      }
+      await ref.read(authControllerProvider.notifier).register(
+        firstName: state.firstName,
+        lastName: state.lastName,
+        roomNumber: state.roomNumber,
+        password: state.password,
+        activationCode: code,
+        phoneNumber: state.phone,
+      );
     } finally {
       state = state.copyWith(isLoading: false);
     }

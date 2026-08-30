@@ -2,7 +2,7 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'user.g.dart';
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class User
 {
   final String id;
@@ -10,6 +10,8 @@ class User
   final String firstName;
   final String lastName;
   final String roomNumber;
+
+  @JsonKey(name: 'phone')
   final String? phoneNumber;
 
   User({

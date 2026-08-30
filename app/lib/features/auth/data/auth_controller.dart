@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+import 'package:maxwell/core/api/dio_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:maxwell/features/auth/domain/user.dart';
@@ -17,41 +19,37 @@ class AuthController extends _$AuthController
   Future<void> _init() async
   {
     final prefs = await SharedPreferences.getInstance();
-    final refreshToken = prefs.getString('refresh_token');
-    
-    if (refreshToken != null) {
-      // simulate API call lol
-      await Future.delayed(const Duration(milliseconds: 500));
+    final accessToken = prefs.getString('access_token');
 
-      state = User(
-        id: 'user-restored',
-        username: 'restored-1234',
-        firstName: 'Restored',
-        lastName: 'User',
-        roomNumber: '1234',
-      );
+    if (accessToken != null) {
+      try {
+        final dio = ref.read(dioProvider);
+        final response = await dio.get('/api/auth/me');
+
+        state = User.fromJson(response.data);
+      } catch (e) {
+        await prefs.remove('access_token');
+        state = null;
+      }
     }
   }
 
   Future<void> login(String username, String password) async
   {
-    // simulate again...
-    await Future.delayed(const Duration(seconds: 1));
-    
-    if (password == 'password123') {
-      final user = User(
-        id: 'user-login',
-        username: username,
-        firstName: 'John',
-        lastName: 'Doe',
-        roomNumber: '101',
-      );
-      
-      state = user;
+    final dio = ref.read(dioProvider);
+
+    try {
+      final response = await dio.post('/api/auth/login', data: {
+        'username': username,
+        'password': password,
+      });
+
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('refresh_token', 'sample-refresh-token-lol');
-    } else {
-      throw Exception('Invalid username or password');
+      await prefs.setString('access_token', response.data['access_token']);
+
+      await _init();
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['detail'] ?? 'Login failed');
     }
   }
 
@@ -60,27 +58,29 @@ class AuthController extends _$AuthController
     required String lastName,
     required String roomNumber,
     required String password,
+    required String activationCode,
     String? phoneNumber,
   }) async {
-    // again...
-    await Future.delayed(const Duration(seconds: 1));
-    
-    // server-side username generation logic (simulated)
-    final username = '${firstName.substring(0, 1).toLowerCase()}${lastName.toLowerCase().replaceAll(' ', '')}-$roomNumber';
-    
-    final user = User(
-      id: 'u-${DateTime.now().millisecondsSinceEpoch}',
-      username: username,
-      firstName: firstName,
-      lastName: lastName,
-      roomNumber: roomNumber,
-      phoneNumber: phoneNumber,
-    );
+    final dio = ref.read(dioProvider);
 
-    state = user;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('refresh_token', 'sample-refresh-token-lol');
-    await prefs.setBool('has_completed_onboarding', true);
+    try {
+      final response = await dio.post('/api/auth/register', data: {
+        'activation_code': activationCode,
+        'first_name': firstName,
+        'last_name': lastName,
+        'room_number': roomNumber,
+        'phone': phoneNumber,
+      });
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('access_token', response.data['access_token']);
+      await prefs.setBool('has_completed_onboarding', true);
+
+      await _init();
+    } on DioException catch (e) {
+      final errorMessage = e.response?.data['detail'] ?? 'Connection error';
+      throw Exception(errorMessage);
+    }
   }
 
   Future<void> logout() async {

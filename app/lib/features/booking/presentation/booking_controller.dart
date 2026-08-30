@@ -1,12 +1,13 @@
+import 'package:dio/dio.dart';
+import 'package:maxwell/core/api/dio_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:maxwell/features/auth/data/auth_controller.dart';
 import 'package:maxwell/features/machines/data/bookings_provider.dart';
-import 'package:maxwell/features/machines/domain/booking.dart';
 
 part 'booking_controller.g.dart';
 
 @riverpod
-class BookingController extends _$BookingController {
+class BookingController extends _$BookingController
+{
   @override
   void build() {}
 
@@ -14,11 +15,11 @@ class BookingController extends _$BookingController {
     required String machineId,
     required DateTime startTime,
     required DateTime endTime,
-  }) async {
-    final user = ref.read(authControllerProvider);
-    if (user == null) throw Exception('User not authenticated');
+  })
+    async
+  {
+    final dio = ref.read(dioProvider);
 
-    // 1. Duration Check: Max 2 hours
     final duration = endTime.difference(startTime);
     if (duration.inMinutes > 120) {
       throw Exception('Bookings cannot exceed 2 hours.');
@@ -27,31 +28,16 @@ class BookingController extends _$BookingController {
       throw Exception('Invalid time range.');
     }
 
-    // 2. Daily Limit Check: Max 3 bookings per day
-    final allBookings = ref.read(bookingsProvider);
-    final now = DateTime.now();
-    final todayBookings = allBookings.where((b) => 
-      b.userName == user.firstName && // Mock check using firstName since we don't have user IDs in mock bookings yet
-      b.startTime.year == now.year &&
-      b.startTime.month == now.month &&
-      b.startTime.day == now.day
-    ).length;
+    try {
+      await dio.post('/api/bookings', data: {
+        'machine_id': machineId,
+        'start_time': startTime.toUtc().toIso8601String(),
+        'end_time': endTime.toUtc().toIso8601String(),
+      });
 
-    if (todayBookings >= 3) {
-      throw Exception('You have reached the limit of 3 bookings for today.');
+      ref.invalidate(bookingsProvider);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['detail'] ?? 'Booking failed');
     }
-
-    // Mock API call
-    await Future.delayed(const Duration(seconds: 1));
-
-    final booking = Booking(
-      id: 'b-${DateTime.now().millisecondsSinceEpoch}',
-      machineId: machineId,
-      userName: user.firstName,
-      startTime: startTime,
-      endTime: endTime,
-    );
-
-    ref.read(bookingsProvider.notifier).addBooking(booking);
   }
 }
