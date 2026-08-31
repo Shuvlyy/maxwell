@@ -113963,7 +113963,7 @@ q=A.aSW(B.af,s,s,B.bS,B.iG)
 return new A.y9(r,"Maxwell",p,A.vg(B.L1,s,new A.pb(s,B.iG,s,s,0,s,new A.cS(A.fs(16),B.r)),q,new A.tb(A.aZb(s,s,B.bS,s,s,s,0,s,s,B.l,s,s,B.rg,s,new A.cS(A.fs(16),B.r),s,s,s,B.JB,s)),A.aU_(new A.fA(4,A.fs(12),B.r),s,B.rf,s,B.No,!0),B.n,B.aer,!0),B.JJ,B.a_L,B.Xa,s)}}
 A.rG.prototype={
 i7(){this.Cl()
-return"http://localhost:8000"},
+return"https://shuvly.freeboxos.fr:50067"},
 Cl(){var s=0,r=A.M(t.H),q=this,p,o
 var $async$Cl=A.I(function(a,b){if(a===1)return A.J(b,r)
 for(;;)switch(s){case 0:o=A
