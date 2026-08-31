@@ -1,9 +1,11 @@
 import uuid
 import secrets
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import HTTPException
 from src.database import db_users, db_machines, db_bookings, SECRET_ACTIVATION_CODE
 from src.models import RegisterRequest, BookingCreate, MachineStatusUpdate
+from src.ws import manager
+import re
 
 def create_user(request: RegisterRequest):
     if request.activation_code != SECRET_ACTIVATION_CODE:
@@ -15,6 +17,14 @@ def create_user(request: RegisterRequest):
     first_letter = request.first_name[0].lower() if request.first_name else ""
     last_name_clean = request.last_name.replace(" ", "").lower() if request.last_name else ""
     username = f"{first_letter}{last_name_clean}-{request.room_number}"
+
+    if not re.match(r"^\d{4}$", request.room_number):
+        raise HTTPException(status_code=400, detail="Room number must be exactly 4 digits.")
+
+    if request.phone:
+        phone_regex = r"^\+?[1-9]\d{1,14}(?:[\s.-]\d{1,13})*$"
+        if not re.match(phone_regex, request.phone):
+            raise HTTPException(status_code=400, detail="Invalid phone number format. Use international format (e.g., +33 7 67 30 51 05).")
 
     db_users[user_id] = {
         "id": user_id,
@@ -70,15 +80,19 @@ def get_user_profile(user_id: str):
 def get_all_machines():
     return list(db_machines.values())
 
-def update_machine_status(machine_id: str, update_data: MachineStatusUpdate):
+async def update_machine_status(machine_id: str, update_data: MachineStatusUpdate):
     if machine_id not in db_machines:
         raise HTTPException(status_code=404, detail="Unknown machine.")
     db_machines[machine_id]["status"] = update_data.status
+    await manager.broadcast({"type": "machines_updated"})
     return db_machines[machine_id]
 
-def create_booking(user_id: str, booking: BookingCreate):
+async def create_booking(user_id: str, booking: BookingCreate):
     if booking.machine_id not in db_machines:
         raise HTTPException(status_code=404, detail="Unknown machine.")
+
+    if booking.start_time < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Bookings can't be in the past lol")
 
     for existing in db_bookings.values():
         if existing["machine_id"] == booking.machine_id:
@@ -93,6 +107,7 @@ def create_booking(user_id: str, booking: BookingCreate):
         "start_time": booking.start_time,
         "end_time": booking.end_time
     }
+    await manager.broadcast({"type": "bookings_updated"})
     return {"id": booking_id, "status": "confirmed"}
 
 def get_bookings(machine_id: str = None, date: str = None):
@@ -117,7 +132,7 @@ def get_bookings(machine_id: str = None, date: str = None):
         })
     return results
 
-def delete_booking(user_id: str, booking_id: str):
+async def delete_booking(user_id: str, booking_id: str):
     booking = db_bookings.get(booking_id)
     if not booking:
         raise HTTPException(status_code=404, detail="Unknown booking.")
@@ -125,4 +140,30 @@ def delete_booking(user_id: str, booking_id: str):
         raise HTTPException(status_code=403, detail="You can only cancel your own bookings.")
 
     del db_bookings[booking_id]
+    await manager.broadcast({"type": "bookings_updated"})
     return True
+
+async def update_booking(user_id: str, booking_id: str, booking: BookingCreate):
+    if booking_id not in db_bookings:
+        raise HTTPException(status_code=404, detail="Unknown booking.")
+
+    existing = db_bookings[booking_id]
+    if existing["user_id"] != user_id:
+        raise HTTPException(status_code=403, detail="You can only edit your own bookings.")
+
+    if booking.start_time < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Bookings can't be in the past lol")
+
+    for bid, b in db_bookings.items():
+        if bid == booking_id: continue
+        if b["machine_id"] == booking.machine_id:
+            if max(booking.start_time, b["start_time"]) < min(booking.end_time, b["end_time"]):
+                raise HTTPException(status_code=409, detail="This timeslot has already been taken.")
+
+    db_bookings[booking_id].update({
+        "start_time": booking.start_time,
+        "end_time": booking.end_time
+    })
+
+    await manager.broadcast({"type": "bookings_updated"})
+    return {"id": booking_id, "status": "updated"}
