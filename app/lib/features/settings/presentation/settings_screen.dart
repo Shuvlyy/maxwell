@@ -2,7 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:maxwell/core/constants.dart';
 import 'package:maxwell/features/auth/data/auth_controller.dart';
+import 'package:maxwell/shared/utils/dialog.dart';
 import 'package:maxwell/shared/widgets/glass_card.dart';
 
 class SettingsScreen extends ConsumerWidget
@@ -72,18 +74,24 @@ class SettingsScreen extends ConsumerWidget
               icon: Icons.language_rounded,
               title: 'Language',
               trailing: 'English',
-              onTap: () {},
+              onTap: () {
+                showBaseDialog(context, "Soon", "This feature is coming soon.");
+              },
             ),
             _SettingsTile(
               icon: isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
               title: 'Appearance',
               trailing: isDark ? 'Dark' : 'Light',
-              onTap: () {},
+              onTap: () {
+                showBaseDialog(context, "Soon", "This feature is coming soon.");
+              },
             ),
             _SettingsTile(
               icon: Icons.notifications_none_rounded,
               title: 'Notifications',
-              onTap: () {},
+              onTap: () {
+                showBaseDialog(context, "Soon", "This feature is coming soon.");
+              },
             ),
           ]),
           const Gap(32),
@@ -100,7 +108,7 @@ class SettingsScreen extends ConsumerWidget
           ]),
           const Gap(16),
 
-          const Center(child: Text('v0.0.1-d'))
+          const Center(child: Text(Constants.appVersion))
         ],
       ),
     );
@@ -130,8 +138,21 @@ class SettingsScreen extends ConsumerWidget
     showDialog(
       context: context,
       builder: (context) => CupertinoAlertDialog(
-        title: const Text('Log Out'),
-        content: const Text('Are you sure you want to log out?'),
+        title: const Text(
+          'Log Out',
+          style: TextStyle(
+            fontSize: 20
+          ),
+        ),
+        content: const Padding(
+          padding: EdgeInsetsGeometry.only(top: 4),
+          child: Text(
+            'Are you sure you want to log out?',
+            style: TextStyle(
+              fontSize: 16
+            ),
+          ),
+        ),
         actions: [
           CupertinoDialogAction(
             child: const Text('Cancel'),

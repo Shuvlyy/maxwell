@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:maxwell/features/onboarding/presentation/onboarding_controller.dart';
+import 'package:maxwell/shared/utils/dialog.dart';
 import 'package:maxwell/shared/widgets/custom_primary_button.dart';
 import 'package:maxwell/shared/widgets/modern_text_field.dart';
 
@@ -81,13 +82,26 @@ class _UserInfoStepState extends ConsumerState<UserInfoStep>
             CustomPrimaryButton(
               text: 'Next',
               onPressed: () {
-                if (state.isComplete()) {
-                  widget.onNext();
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please fill all required fields')),
-                  );
+                if (!state.isComplete()) {
+                  showErrorDialog(context, 'Please fill all required fields');
+                  return;
                 }
+
+                final roomRegex = RegExp(r'^\d{4}$');
+                if (!roomRegex.hasMatch(state.roomNumber)) {
+                  showErrorDialog(context, 'Room number must be exactly 4 digits');
+                  return;
+                }
+
+                if (state.phone != null && state.phone!.isNotEmpty) {
+                  final phoneRegex = RegExp(r'^\+?[1-9]\d{1,14}(?:[\s.-]\d{1,13})*$');
+                  if (!phoneRegex.hasMatch(state.phone!)) {
+                    showErrorDialog(context, "Invalid phone format.\nUse international format (e.g., +33 7 67...)");
+                    return;
+                  }
+                }
+
+                widget.onNext();
               },
             ),
           ],

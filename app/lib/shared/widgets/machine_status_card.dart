@@ -19,47 +19,41 @@ class MachineStatusCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currentBookingAsync = ref.watch(currentBookingForMachineProvider(machine.id));
+    final currentBooking = ref.watch(currentBookingForMachineProvider(machine.id));
     final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
 
-    return currentBookingAsync.when(
-      data: (Booking? currentBooking) {
-        final isMaintenance = machine.status == MachineStatus.out_of_order;
-        final isInUse = currentBooking != null && !isMaintenance;
+    final isMaintenance = machine.status == MachineStatus.out_of_order;
+    final isInUse = currentBooking != null && !isMaintenance;
 
-        final statusColor = isMaintenance ? Colors.red : (isInUse ? Colors.orange : Colors.green);
-        final statusText = isMaintenance ? 'Maintenance' : (isInUse ? 'In Use' : 'Available');
+    final statusColor = isMaintenance ? Colors.red : (isInUse ? Colors.orange : Colors.green);
+    final statusText = isMaintenance ? 'Maintenance' : (isInUse ? 'In Use' : 'Available');
 
-        return InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(24),
-          child: GlassCard(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildAnimatedIcon(context, isInUse),
-                const Gap(16),
-                Text(
-                  machine.name,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const Gap(8),
-                _buildStatusBadge(statusColor, statusText, isIOS),
-                const Gap(18),
-                _buildDescriptionText(context, isInUse, isMaintenance, currentBooking),
-              ],
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(24),
+      child: GlassCard(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildAnimatedIcon(context, isInUse),
+            const Gap(16),
+            Text(
+              machine.name,
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
+              ),
             ),
-          ),
-        ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutCubic);
-      },
-      loading: () => const GlassCard(child: Center(child: CircularProgressIndicator())),
-      error: (e, s) => const GlassCard(child: Center(child: Text('Erreur de chargement'))),
-    );
+            const Gap(8),
+            _buildStatusBadge(statusColor, statusText, isIOS),
+            const Gap(18),
+            _buildDescriptionText(context, isInUse, isMaintenance, currentBooking),
+          ],
+        ),
+      ),
+    ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutCubic);
   }
 
   Widget _buildAnimatedIcon(BuildContext context, bool isInUse) {

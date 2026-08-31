@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:maxwell/features/auth/data/auth_controller.dart';
+import 'package:maxwell/shared/utils/dialog.dart';
 import 'package:maxwell/shared/widgets/custom_primary_button.dart';
 import 'package:maxwell/shared/widgets/modern_text_field.dart';
 
@@ -29,12 +30,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: Colors.red,
-          ),
-        );
+        showErrorDialog(context, e.toString().replaceAll('Exception: ', ''));
       }
     } finally {
       if (mounted) {

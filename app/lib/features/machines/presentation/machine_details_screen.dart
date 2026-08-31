@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
+import 'package:maxwell/features/booking/presentation/booking_controller.dart';
 import 'package:maxwell/features/machines/data/machines_provider.dart';
 import 'package:maxwell/features/machines/data/bookings_provider.dart';
 import 'package:maxwell/features/machines/domain/machine.dart';
@@ -11,6 +12,8 @@ import 'package:maxwell/features/machines/domain/booking.dart';
 import 'package:maxwell/features/booking/presentation/booking_sheet.dart';
 import 'package:maxwell/shared/widgets/custom_primary_button.dart';
 import 'package:maxwell/shared/widgets/glass_card.dart';
+
+import 'package:maxwell/features/auth/data/auth_controller.dart';
 
 class MachineDetailsScreen extends ConsumerWidget
 {
@@ -22,19 +25,19 @@ class MachineDetailsScreen extends ConsumerWidget
   Widget build(BuildContext context, WidgetRef ref) {
     final machineAsync = ref.watch(machineByIdProvider(id));
     final bookingsAsync = ref.watch(bookingsForMachineProvider(id));
-    final currentBookingAsync = ref.watch(currentBookingForMachineProvider(id));
+    final currentBooking = ref.watch(currentBookingForMachineProvider(id));
+    final user = ref.watch(authControllerProvider);
 
-    if (machineAsync.isLoading || bookingsAsync.isLoading || currentBookingAsync.isLoading) {
+    final machine = machineAsync.valueOrNull;
+    final bookings = bookingsAsync.valueOrNull;
+
+    // We no longer check currentBookingAsync.isLoading because currentBooking is synchronous
+    if (machine == null || bookings == null) {
+      if (machineAsync.hasError || bookingsAsync.hasError) {
+        return const Scaffold(body: Center(child: Text('Erreur ou machine introuvable')));
+      }
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-
-    if (machineAsync.hasError || machineAsync.value == null) {
-      return const Scaffold(body: Center(child: Text('Erreur ou machine introuvable')));
-    }
-
-    final machine = machineAsync.value!;
-    final bookings = bookingsAsync.value ?? [];
-    final currentBooking = currentBookingAsync.value;
 
     final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
     final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
@@ -50,7 +53,7 @@ class MachineDetailsScreen extends ConsumerWidget
         child: Column(
           children: [
             _buildHeader(context, machine, currentBooking),
-            _buildReservationsList(context, bookings),
+            _buildReservationsList(context, bookings, ref, machine),
           ],
         ),
       ),
@@ -62,22 +65,36 @@ class MachineDetailsScreen extends ConsumerWidget
     final isMaintenance = machine.status == MachineStatus.out_of_order;
     final isInUse = currentBooking != null && !isMaintenance;
 
-    final statusColor = isMaintenance ? Colors.red : (isInUse ? Colors.orange : Colors.green); // todo: no nested ternary operators
+    Color statusColor;
+    if (isMaintenance) {
+      statusColor = Colors.red;
+    } else if (isInUse) {
+      statusColor = Colors.orange;
+    } else {
+      statusColor = Colors.green;
+    }
+
+    final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
+
+    Widget icon = Icon(
+      machine.type == MachineType.washer
+        ? Icons.local_laundry_service
+        : Icons.wb_sunny_outlined,
+      size: 80,
+      color: Theme.of(context).colorScheme.primary,
+    );
+
+    if (isInUse) {
+      icon = icon
+        .animate(onPlay: (c) => c.repeat())
+        .rotate(duration: isIOS ? 3000.ms : 2000.ms, curve: Curves.linear);
+    }
 
     return Container(
       padding: const EdgeInsets.all(32),
       child: Column(
         children: [
-          Icon(
-            machine.type == MachineType.washer
-              ? Icons.local_laundry_service
-              : Icons.wb_sunny_outlined,
-            size: 80,
-            color: Theme.of(context).colorScheme.primary,
-          )
-          .animate(onPlay: (c) => isInUse ? c.repeat() : null)
-          .rotate(duration: 2000.ms),
-
+          icon,
           const Gap(24),
 
           Text(
@@ -109,8 +126,10 @@ class MachineDetailsScreen extends ConsumerWidget
     );
   }
 
-  Widget _buildReservationsList(BuildContext context, List<Booking> bookings)
+  Widget _buildReservationsList(BuildContext context, List<Booking> bookings, WidgetRef ref, Machine machine)
   {
+    final currentUser = ref.watch(authControllerProvider);
+
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -147,26 +166,47 @@ class MachineDetailsScreen extends ConsumerWidget
                 final timeFormat = DateFormat('HH:mm');
                 final now = DateTime.now();
                 final isCurrent = booking.startTime.isBefore(now) && booking.endTime.isAfter(now);
+                
+                // Simplified ownership check - in a real app we'd compare IDs
+                // but since the Booking model's user doesn't have an ID, we compare names/rooms
+                // or ideally update the model. For now, let's assume if it matches currentUser it's ours.
+                final isMine = currentUser != null && 
+                               booking.user.firstName == currentUser.firstName && 
+                               booking.user.lastName == currentUser.lastName;
 
                 Widget item = GlassCard(
                   borderRadius: 16,
                   border: isCurrent ? Border.all(color: Colors.orange.withOpacity(0.5), width: 1.5) : null,
                   child: ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: isCurrent ? Colors.orange : Colors.blueAccent,
-                      child: const Icon(Icons.person, color: Colors.white),
+                      backgroundColor: isMine ? Theme.of(context).colorScheme.primary : (isCurrent ? Colors.orange : Colors.blueAccent),
+                      child: Icon(isMine ? Icons.star : Icons.person, color: Colors.white),
                     ),
                     title: Text(
-                      '${booking.user.firstName} ${booking.user.lastName}',
+                      isMine ? 'Your Reservation' : '${booking.user.firstName} ${booking.user.lastName}',
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                     subtitle: Text(
                       '${timeFormat.format(booking.startTime.toLocal())} - ${timeFormat.format(booking.endTime.toLocal())}',
                     ),
-                    trailing: isCurrent
+                    trailing: isMine 
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit_outlined, size: 20),
+                              onPressed: () => BookingSheet.show(context, machine, existingBooking: booking),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
+                              onPressed: () => _confirmDeletion(context, ref, booking),
+                            ),
+                          ],
+                        )
+                      : (isCurrent
                         ? const Text('NOW', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold))
-                        : null,
-                    onTap: () {
+                        : null),
+                    onTap: isMine ? null : () {
                       showCupertinoDialog(
                         context: context,
                         builder: (context) => CupertinoAlertDialog(
@@ -208,6 +248,43 @@ class MachineDetailsScreen extends ConsumerWidget
                 return item;
               },
             ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeletion(BuildContext context, WidgetRef ref, Booking booking) {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Cancel Reservation?'),
+        content: const Text('Are you sure you want to cancel this laundry booking?'),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('No'),
+            onPressed: () => Navigator.pop(context),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                await ref.read(bookingControllerProvider.notifier).deleteBooking(booking.id);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Reservation cancelled')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+                  );
+                }
+              }
+            },
+            child: const Text('Yes, Cancel'),
+          ),
         ],
       ),
     );
