@@ -6,7 +6,8 @@ import sys
 
 load_dotenv()
 
-DB_FILE = "database.json"
+os.makedirs("data", exist_ok=True)
+DB_FILE = "data/database.json"
 
 db_users = {}
 db_bookings = {}
@@ -27,7 +28,7 @@ db_machines = {
     }
 }
 
-SECRET_ACTIVATION_CODE = os.getenv("SECRET_ACTIVATION_CODE")
+SECRET_ACTIVATION_CODE = os.getenv("SECRET_CODE")
 
 if SECRET_ACTIVATION_CODE is None or len(SECRET_ACTIVATION_CODE) == 0:
     print("Secret activation code (SECRET_CODE) has not been found in the .env file. Please provide it.")
@@ -53,6 +54,7 @@ def load_db():
 
             if "machines" in data:
                 db_machines.update(data["machines"])
+    save_db()
 
 def save_db():
     with open(DB_FILE, "w", encoding="utf-8") as f:
