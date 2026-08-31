@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:maxwell/features/auth/data/auth_controller.dart';
 import 'package:maxwell/features/machines/data/machines_provider.dart';
@@ -18,18 +19,28 @@ class HomeScreen extends ConsumerWidget
 
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Maxwell', style: TextStyle(fontWeight: FontWeight.w800)),
-            if (username.isNotEmpty)
-              Text(
-                '@$username',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).hintColor,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+            Image.asset(
+              "assets/maxwell.png",
+              height: 44,
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Text('Maxwell', style: TextStyle(fontWeight: FontWeight.w800)),
+                if (username.isNotEmpty)
+                  Text(
+                    '@$username',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).hintColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+              ],
+            ),
+            const Gap(44)
           ],
         ),
       ),

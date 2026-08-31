@@ -18,17 +18,6 @@ class GateScreen extends StatelessWidget
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topRight,
-                end: Alignment.bottomLeft,
-                colors: isDark 
-                  ? [const Color(0xFF000000), const Color(0xFF1C1C1E)] 
-                  : [const Color(0xFFE0EAFC), const Color(0xFFCFDEF3)],
-              ),
-            ),
-          ),
           Positioned(
             top: MediaQuery.of(context).padding.top + 8,
             right: 16,
@@ -44,11 +33,15 @@ class GateScreen extends StatelessWidget
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Spacer(),
-                  const Icon(
-                    Icons.local_laundry_service_rounded,
-                    size: 100,
-                    color: Color(0xFF007AFF),
-                  ).animate().fadeIn(duration: 800.ms).scale(delay: 200.ms),
+                  Image.asset(
+                    "assets/maxwell.png",
+                    height: 256,
+                  ),
+                  // const Icon(
+                  //   Icons.local_laundry_service_rounded,
+                  //   size: 100,
+                  //   color: Color(0xFF007AFF),
+                  // ).animate().fadeIn(duration: 800.ms).scale(delay: 200.ms),
                   const Gap(24),
                   Text(
                     'Maxwell',
