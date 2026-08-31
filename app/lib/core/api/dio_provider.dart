@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:maxwell/core/api/base_url_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -6,9 +7,11 @@ part 'dio_provider.g.dart';
 
 @riverpod
 Dio dio(DioRef ref) {
+  final baseUrl = ref.watch(baseUrlProvider);
+  
   final dio = Dio(
     BaseOptions(
-      baseUrl: 'http://localhost:8000',
+      baseUrl: baseUrl,
       connectTimeout: const Duration(seconds: 5),
       receiveTimeout: const Duration(seconds: 3),
       contentType: 'application/json',

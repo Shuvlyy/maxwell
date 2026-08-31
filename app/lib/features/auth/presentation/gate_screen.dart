@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:maxwell/shared/widgets/api_url_dialog.dart';
 import 'package:maxwell/shared/widgets/custom_primary_button.dart';
 import 'package:maxwell/shared/widgets/glass_card.dart';
 
@@ -26,6 +27,14 @@ class GateScreen extends StatelessWidget
                   ? [const Color(0xFF000000), const Color(0xFF1C1C1E)] 
                   : [const Color(0xFFE0EAFC), const Color(0xFFCFDEF3)],
               ),
+            ),
+          ),
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 8,
+            right: 16,
+            child: IconButton(
+              icon: Icon(Icons.settings_outlined, color: isDark ? Colors.white70 : Colors.black54),
+              onPressed: () => ApiUrlDialog.show(context),
             ),
           ),
           SafeArea(

@@ -7,6 +7,8 @@ import 'package:maxwell/features/auth/data/auth_controller.dart';
 import 'package:maxwell/shared/utils/dialog.dart';
 import 'package:maxwell/shared/widgets/glass_card.dart';
 
+import 'package:maxwell/shared/widgets/api_url_dialog.dart';
+
 class SettingsScreen extends ConsumerWidget
 {
   const SettingsScreen({super.key});
@@ -70,6 +72,11 @@ class SettingsScreen extends ConsumerWidget
           ),
           const Gap(16),
           _buildSettingsGroup([
+            _SettingsTile(
+              icon: Icons.lan_outlined,
+              title: 'Server URL',
+              onTap: () => ApiUrlDialog.show(context),
+            ),
             _SettingsTile(
               icon: Icons.language_rounded,
               title: 'Language',
