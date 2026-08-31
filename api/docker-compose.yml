@@ -3,11 +3,20 @@ services:
     build: .
     container_name: maxwell-api
     ports:
-      - "8000:8000"
+      - "50068:8000"
     volumes:
       - maxwell_db_data:/app/data
     env_file:
       - .env
+    restart: unless-stopped
+
+  flutter-frontend:
+    image: nginx:alpine
+    container_name: flutter-frontend
+    ports:
+      - "50067:80"
+    volumes:
+      - ../app/build/web:/usr/share/nginx/html:ro
     restart: unless-stopped
 
 volumes:
