@@ -114136,7 +114136,7 @@ g===$&&A.a()
 n=g.hR($.rq(),t.kE)
 q=3
 s=6
-return A.N(n.Qy("/api/auth/register",A.ax(["activation_code",a,"first_name",b,"last_name",c,"room_number",a0,"phone",e],t.N,t.ob),t.z),$async$qo)
+return A.N(n.Qy("/api/auth/register",A.ax(["activation_code",a,"first_name",b,"last_name",c,"room_number",a0,"password",d,"phone",e],t.N,t.ob),t.z),$async$qo)
 case 6:m=a2
 s=7
 return A.N(A.m9(),$async$qo)
