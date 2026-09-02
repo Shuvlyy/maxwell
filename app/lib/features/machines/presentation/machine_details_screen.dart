@@ -156,8 +156,8 @@ class MachineDetailsScreen extends ConsumerWidget
                 final current = bookings[index];
                 final next = index + 1 < bookings.length ? bookings[index + 1] : null;
 
-                if (next != null && !_isSameDay(current.startTime, next.startTime)) {
-                  return _buildDateSeparator(context, next.startTime);
+                if (next != null && !_isSameDay(current.startTime.toLocal(), next.startTime.toLocal())) {
+                  return _buildDateSeparator(context, next.startTime.toLocal());
                 }
                 return const Gap(12);
               },
@@ -239,7 +239,7 @@ class MachineDetailsScreen extends ConsumerWidget
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildDateSeparator(context, booking.startTime),
+                      _buildDateSeparator(context, booking.startTime.toLocal()),
                       item,
                     ],
                   );
