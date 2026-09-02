@@ -1,10 +1,27 @@
 import uuid
-from sqlalchemy import Column, String, DateTime, ForeignKey
+import datetime
+from sqlalchemy import Column, String, DateTime, ForeignKey, TypeDecorator
 from sqlalchemy.orm import relationship
 from src.database import Base
 
 def generate_id(prefix: str):
     return f"{prefix}_{uuid.uuid4().hex[:8]}"
+
+class UTCDateTime(TypeDecorator):
+    impl = DateTime
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is not None:
+            if value.tzinfo is None:
+                value = value.replace(tzinfo=datetime.timezone.utc)
+            return value.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+        return value
+
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            return value.replace(tzinfo=datetime.timezone.utc)
+        return value
 
 class User(Base):
     __tablename__ = "users"
@@ -33,8 +50,9 @@ class Booking(Base):
     id = Column(String, primary_key=True, default=lambda: generate_id("bk"))
     user_id = Column(String, ForeignKey("users.id"))
     machine_id = Column(String, ForeignKey("machines.id"))
-    start_time = Column(DateTime(timezone=True))
-    end_time = Column(DateTime(timezone=True))
+
+    start_time = Column(UTCDateTime)
+    end_time = Column(UTCDateTime)
 
     user = relationship("User", back_populates="bookings")
     machine = relationship("Machine", back_populates="bookings")
