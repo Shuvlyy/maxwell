@@ -1,67 +1,22 @@
-import json
 import os
-from datetime import datetime
+from sqlalchemy import create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
 from dotenv import load_dotenv
 import sys
 
 load_dotenv()
-
-os.makedirs("data", exist_ok=True)
-DB_FILE = "data/database.json"
-
-db_users = {}
-db_bookings = {}
-db_machines = {
-    "machine_dryer_1": {
-        "id": "machine_dryer_1",
-        "type": "dryer",
-        "status": "available",
-        "current_user_id": None,
-        "next_booking": None
-    },
-    "machine_washer_1": {
-        "id": "machine_washer_1",
-        "type": "washer",
-        "status": "available",
-        "current_user_id": None,
-        "next_booking": None
-    }
-}
-
 SECRET_ACTIVATION_CODE = os.getenv("SECRET_CODE")
 
 if SECRET_ACTIVATION_CODE is None or len(SECRET_ACTIVATION_CODE) == 0:
-    print("Secret activation code (SECRET_CODE) has not been found in the .env file. Please provide it.")
+    print("SECRET_CODE environment variable could not be found. Please specify one.")
     sys.exit(1)
 
-def custom_serializer(obj):
-    if isinstance(obj, datetime):
-        return obj.isoformat()
-    raise TypeError(f"Type {type(obj)} non sérialisable")
+os.makedirs("./data", exist_ok=True)
+SQLALCHEMY_DATABASE_URL = "sqlite:///./data/maxwell.db"
 
-def load_db():
-    global db_users, db_bookings, db_machines
-    if os.path.exists(DB_FILE):
-        with open(DB_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            db_users.update(data.get("users", {}))
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 
-            loaded_bookings = data.get("bookings", {})
-            for b_id, b in loaded_bookings.items():
-                b["start_time"] = datetime.fromisoformat(b["start_time"])
-                b["end_time"] = datetime.fromisoformat(b["end_time"])
-            db_bookings.update(loaded_bookings)
-
-            if "machines" in data:
-                db_machines.update(data["machines"])
-    save_db()
-
-def save_db():
-    with open(DB_FILE, "w", encoding="utf-8") as f:
-        json.dump({
-            "users": db_users,
-            "bookings": db_bookings,
-            "machines": db_machines
-        }, f, default=custom_serializer, indent=4)
-
-load_db()
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()

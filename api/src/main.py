@@ -1,24 +1,33 @@
 import fastapi
 from fastapi.middleware.cors import CORSMiddleware
-from src.ws import manager
 from fastapi import WebSocket, WebSocketDisconnect
-
-# from src.database import Base, engine
+from src.ws import manager
+from src.database import engine, SessionLocal
+from src.db_models import Base, Machine
 from src.routers import auth, laundry
 
-# Base.metadata.create_all(bind=engine)  # todo: use alembic for production
+Base.metadata.create_all(bind=engine)
+
+db = SessionLocal()
+try:
+    if not db.query(Machine).first():
+        db.add_all([
+            Machine(id="machine_washer_1", type="washer", status="available"),
+            Machine(id="machine_dryer_1", type="dryer", status="available")
+        ])
+        db.commit()
+finally:
+    db.close()
 
 app = fastapi.FastAPI(
     title="Maxwell API",
-    description="",
-    version="0.0.1",
+    description="Laundry Booking API",
+    version="0.0.1"
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "*"
-    ],  # todo: !!! not for production. should be something like "allow_origins=["https://u-skill.univ-nantes.fr"]"
+    allow_origins=["*"],  # todo: tighten this for production
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],

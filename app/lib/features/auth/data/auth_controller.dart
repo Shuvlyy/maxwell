@@ -69,6 +69,7 @@ class AuthController extends _$AuthController
         'first_name': firstName,
         'last_name': lastName,
         'room_number': roomNumber,
+        'password': password,
         'phone': phoneNumber,
       });
 

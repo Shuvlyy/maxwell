@@ -1,5 +1,5 @@
 from typing import Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 
 class RegisterRequest(BaseModel):
@@ -7,6 +7,7 @@ class RegisterRequest(BaseModel):
     first_name: str
     last_name: str
     room_number: str
+    password: str
     phone: Optional[str] = None
 
 class TokenResponse(BaseModel):
@@ -14,7 +15,6 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     user_id: str
 
-# bookings
 class BookingBase(BaseModel):
     machine_id: str
     start_time: datetime
@@ -28,6 +28,7 @@ class BookingUser(BaseModel):
     last_name: str
     room_number: str
     phone: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
 
 class BookingResponse(BaseModel):
     id: str
@@ -35,18 +36,19 @@ class BookingResponse(BaseModel):
     user: BookingUser
     start_time: datetime
     end_time: datetime
+    model_config = ConfigDict(from_attributes=True)
 
 class BookingShort(BaseModel):
     id: str
     machine_id: str
     start_time: datetime
     end_time: datetime
+    model_config = ConfigDict(from_attributes=True)
 
 class BookingConfirmed(BaseModel):
     id: str
     status: str = "confirmed"
 
-# user
 class UserMeResponse(BaseModel):
     id: str
     username: str
@@ -55,16 +57,14 @@ class UserMeResponse(BaseModel):
     room_number: str
     phone: Optional[str] = None
     upcoming_bookings: List[BookingShort] = []
+    model_config = ConfigDict(from_attributes=True)
 
-# machines
-
-# todo: enums for type & status?
 class MachineResponse(BaseModel):
     id: str
-    type: str # "washer" or "dryer"
-    status: str # "available", "running", "out_of_order"
-    current_user_id: Optional[str] = None
-    next_booking: Optional[datetime] = None
+    type: str
+    status: str
+    note: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
 
 class MachineStatusUpdate(BaseModel):
     status: str
