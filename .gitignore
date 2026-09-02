@@ -3,3 +3,7 @@
 .env
 __pycache__
 .artifacts
+.idea
+.zed
+.vscode
+.venv

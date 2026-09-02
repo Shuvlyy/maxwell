@@ -2,7 +2,7 @@ import uuid
 import secrets
 from datetime import datetime, timezone
 from fastapi import HTTPException
-from src.database import db_users, db_machines, db_bookings, SECRET_ACTIVATION_CODE
+from src.database import db_users, db_machines, db_bookings, SECRET_ACTIVATION_CODE, save_db
 from src.models import RegisterRequest, BookingCreate, MachineStatusUpdate
 from src.ws import manager
 import re
@@ -35,6 +35,8 @@ def create_user(request: RegisterRequest):
         "phone": request.phone,
         "access_token": access_token
     }
+
+    save_db()
 
     return {"access_token": access_token, "token_type": "bearer", "user_id": user_id}
 
@@ -85,6 +87,7 @@ async def update_machine_status(machine_id: str, update_data: MachineStatusUpdat
         raise HTTPException(status_code=404, detail="Unknown machine.")
     db_machines[machine_id]["status"] = update_data.status
     await manager.broadcast({"type": "machines_updated"})
+    save_db()
     return db_machines[machine_id]
 
 async def create_booking(user_id: str, booking: BookingCreate):
@@ -108,6 +111,9 @@ async def create_booking(user_id: str, booking: BookingCreate):
         "end_time": booking.end_time
     }
     await manager.broadcast({"type": "bookings_updated"})
+
+    save_db()
+
     return {"id": booking_id, "status": "confirmed"}
 
 def get_bookings(machine_id: str = None, date: str = None):
@@ -115,6 +121,8 @@ def get_bookings(machine_id: str = None, date: str = None):
     for b in db_bookings.values():
         if machine_id and b["machine_id"] != machine_id:
             continue
+
+        # todo: don't include bookings that are older than timestamp(NOW)
 
         user = db_users.get(b["user_id"])
 
@@ -141,6 +149,7 @@ async def delete_booking(user_id: str, booking_id: str):
 
     del db_bookings[booking_id]
     await manager.broadcast({"type": "bookings_updated"})
+    save_db()
     return True
 
 async def update_booking(user_id: str, booking_id: str, booking: BookingCreate):
@@ -166,4 +175,5 @@ async def update_booking(user_id: str, booking_id: str, booking: BookingCreate):
     })
 
     await manager.broadcast({"type": "bookings_updated"})
+    save_db()
     return {"id": booking_id, "status": "updated"}
