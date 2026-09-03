@@ -116,7 +116,9 @@ async def create_booking(db: Session, user_id: str, booking: BookingCreate):
     return {"id": new_booking.id, "status": "confirmed"}
 
 def get_bookings(db: Session, machine_id: str = None):
-    query = db.query(Booking)
+    now = datetime.now(timezone.utc)
+    query = db.query(Booking).filter(Booking.end_time >= now)
+
     if machine_id:
         query = query.filter(Booking.machine_id == machine_id)
     return query.all()
